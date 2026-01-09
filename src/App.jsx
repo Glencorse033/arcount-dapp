@@ -32,7 +32,8 @@ function App() {
     data: hash,
     error,
     isPending,
-    writeContract
+    writeContract,
+    reset
   } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -51,8 +52,12 @@ function App() {
   useEffect(() => {
     if (isConfirmed) {
       refetch()
+      setNewGreeting('')
+      // Reset mutation state after 4 seconds to clear success message and hash
+      const timer = setTimeout(() => reset(), 4000)
+      return () => clearTimeout(timer)
     }
-  }, [isConfirmed, refetch])
+  }, [isConfirmed, refetch, reset])
 
   return (
     <div className="container">
