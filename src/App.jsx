@@ -36,8 +36,12 @@ function App() {
     reset
   } = useWriteContract()
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({ hash })
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError: isConfirmError,
+    error: confirmError
+  } = useWaitForTransactionReceipt({ hash })
 
   const handleUpdate = () => {
     if (!newGreeting) return
@@ -53,11 +57,17 @@ function App() {
     if (isConfirmed) {
       refetch()
       setNewGreeting('')
-      // Reset mutation state after 4 seconds to clear success message and hash
-      const timer = setTimeout(() => reset(), 4000)
+      const timer = setTimeout(() => reset(), 5000)
       return () => clearTimeout(timer)
     }
   }, [isConfirmed, refetch, reset])
+
+  useEffect(() => {
+    if (isConfirmError || error) {
+      const timer = setTimeout(() => reset(), 10000)
+      return () => clearTimeout(timer)
+    }
+  }, [isConfirmError, error, reset])
 
   return (
     <div className="container">
@@ -122,11 +132,24 @@ function App() {
             </div>
 
             {isConfirmed && <p className="success-msg">Greeting updated successfully!</p>}
-            {error && <p className="error-msg">Error: {error.shortMessage || error.message}</p>}
-            {hash && !isConfirmed && (
-              <p style={{ fontSize: '0.75rem', textAlign: 'center', marginTop: '1rem', color: '#94a3b8' }}>
-                Transaction Hash: <a href={`https://testnet.arcscan.app/tx/${hash}`} target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>{hash.slice(0, 10)}...</a>
-              </p>
+            {(error || isConfirmError) && (
+              <div className="error-msg">
+                <p>Error: {confirmError?.shortMessage || error?.shortMessage || 'Transaction failed or not found'}</p>
+                <button onClick={() => reset()} className="btn" style={{ marginTop: '0.5rem', background: '#ef4444' }}>
+                  Reset State
+                </button>
+              </div>
+            )}
+
+            {hash && !isConfirmed && !isConfirmError && (
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  Transaction Hash: <a href={`https://testnet.arcscan.app/tx/${hash}`} target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>{hash.slice(0, 10)}...</a>
+                </p>
+                <button onClick={() => reset()} className="btn" style={{ width: 'auto', margin: '0.5rem auto', fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#475569' }}>
+                  Cancel & Reset UI
+                </button>
+              </div>
             )}
           </div>
         )}
